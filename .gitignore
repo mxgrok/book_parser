@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 books
+
+# ide files
+idea
