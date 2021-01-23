@@ -11,3 +11,7 @@ class ProxiesPoolIsemptyExeption(BasicException):
 
 class ResponseRedirectException(BasicException):
     pass
+
+
+class ParserConfigIsEmptyException(BasicException):
+    pass
