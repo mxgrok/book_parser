@@ -1,5 +1,7 @@
 import os
 
+from pathvalidate import sanitize_filename, sanitize_filepath
+
 from storages.storage_abstract import StorageAbstract
 
 
@@ -15,6 +17,9 @@ class FileSystemStorage(StorageAbstract):
         return file_system_path
 
     def save(self, content: bytes, name: str):
-        file_path: str = os.path.join(self.file_system_path, name)
+        file_path: str = os.path.join(
+            sanitize_filepath(self.file_system_path),
+            sanitize_filename(name)
+        )
         with open(file_path, 'wb') as file:
             file.write(content)
