@@ -132,3 +132,5 @@ books
 
 # ide files
 .idea
+
+config.py
