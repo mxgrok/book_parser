@@ -13,3 +13,6 @@ change args -s (end_id) and -e (end_id) as you with but
 you need to know end id must be greater than start id!
 
 if you want to use proxies set proxies list in config.py and add one more arg: `-p true`
+
+###  The purpose of the project
+The code is written for educational purposes in the dvmn.org online course for web developers.
