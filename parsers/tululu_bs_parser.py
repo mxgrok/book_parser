@@ -1,3 +1,5 @@
+from urllib.parse import ParseResult, urlparse, urljoin
+
 from bs4 import BeautifulSoup
 
 from parsers.bs_parser_abstract import BsParserAbstract
@@ -35,17 +37,29 @@ class TululuBsParser(BsParserAbstract):
         except Exception as _err:
             pass
         else:
-            return text
+            return text.strip()
 
-    def parse(self, content: str):
+    def parse_url(self, soup):
+        try:
+            url = soup.select_one('a:-soup-contains("скачать txt")').get('href')
+        except Exception as _err:
+            pass
+        else:
+            return url
+
+    def parse(self, content: str, url: str):
+        parsed_url: ParseResult = urlparse(url)
+        site_url: str = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
+
         soup: BeautifulSoup = BeautifulSoup(content, 'lxml')
         title, author = self.parse_title_and_author(soup)
 
         information_dict: dict = {
             'title': title,
             'author': author,
-            'image_url': self.parse_image_url(soup),
-            'text': self.parse_text(soup).strip(),
+            'image_url': urljoin(site_url, self.parse_image_url(soup)),
+            'text': self.parse_text(soup),
+            'url': urljoin(site_url, self.parse_url(soup))
         }
 
         return information_dict

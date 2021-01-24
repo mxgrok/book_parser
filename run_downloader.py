@@ -1,7 +1,7 @@
 import config
 from parsers.bs_parser_abstract import BsParserAbstract
 from parsers.tululu_bs_parser import TululuBsParser
-from downloaders import BooksDownloaderThroughProxy
+from downloaders.books_downloader_through_proxy import BooksDownloaderThroughProxy
 from proxy import ProxiesPool
 from storages.fs_storage import FileSystemStorage
 
@@ -11,9 +11,8 @@ if __name__ == '__main__':
     storage = FileSystemStorage('C:\\Users\\mxgrok\\projects\\book_parser\\books')
     tululu_parser: BsParserAbstract = TululuBsParser()
 
-    book_url_tpl = 'https://tululu.org/txt.php?id={}'
-    book_urls = [book_url_tpl.format(i) for i in range(1, 11)]
-    books_urls = ['https://tululu.org/b32168/']
+    book_page_url_tpl = 'https://tululu.org/b{}/'
+    book_page_urls = [book_page_url_tpl.format(i) for i in range(1, 11)]
 
     books_downloader = BooksDownloaderThroughProxy(
         storage,
@@ -22,6 +21,6 @@ if __name__ == '__main__':
         tululu_parser,
         config.user_agents
     )
-    info = books_downloader.get_books_information(books_urls)
-    print(info)
-    # books_downloader.download_books_by_urls(book_urls)
+    book_page_info_list = books_downloader.get_books_information(book_page_urls)
+    print(book_page_info_list)
+    books_downloader.download_books_by_urls(book_page_info_list)

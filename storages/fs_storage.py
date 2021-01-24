@@ -18,7 +18,7 @@ class FileSystemStorage(StorageAbstract):
 
     def save(self, content: bytes, name: str):
         file_path: str = os.path.join(
-            sanitize_filepath(self.file_system_path),
+            sanitize_filepath(self.file_system_path, platform='auto'),
             sanitize_filename(name)
         )
         with open(file_path, 'wb') as file:
