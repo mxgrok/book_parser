@@ -23,7 +23,7 @@ if __name__ == '__main__':
         config.user_agents
     )
     book_page_info_list = books_downloader.get_books_information(book_page_urls)
-    print([i.get('genre') for i in book_page_info_list if i.get('genre')])
+    print([i.get('genres') for i in book_page_info_list if i.get('genres')])
     books_downloader.download_books_by_urls(book_page_info_list)
 
     img_downloader = BooksDownloaderThroughProxy(
