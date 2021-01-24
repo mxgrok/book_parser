@@ -19,7 +19,7 @@ class Proxy:
         try:
             requests.get(check_by_url, proxies=proxies, timeout=1, verify=False)
         except (requests.exceptions.ProxyError, requests.exceptions.ConnectTimeout):
-            logger.error(f'Not valid proxy: {proxies}')
+            logger.debug(f'Not valid proxy: {proxies}')
         else:
             return True
 

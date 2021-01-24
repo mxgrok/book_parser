@@ -17,14 +17,15 @@ logger = logging.getLogger()
 logger.setLevel('DEBUG')
 
 
-class BooksDownloader:
+class Downloader:
 
-    def __init__(self, storage: StorageAbstract, redirected_codes: tuple, parser: BsParserAbstract,
+    def __init__(self,
+                 redirected_codes: tuple,
+                 parser: BsParserAbstract,
                  user_agents: list = None):
         self.parser: BsParserAbstract = parser
         self.redirected_codes: tuple = redirected_codes
         self.user_agents: list = user_agents
-        self.storage: StorageAbstract = storage
 
     def get_user_agent(self) -> dict:
         if self.user_agents:
@@ -60,7 +61,7 @@ class BooksDownloader:
 
         return response.content
 
-    def download_books_by_urls(self, books: list):
+    def download_books_by_urls(self, books: list, storage: StorageAbstract):
         for book in books:
             try:
                 content: bytes = self.get_content(book.get('url'))
@@ -79,9 +80,9 @@ class BooksDownloader:
             else:
                 book_name: str = book.get('title')
                 filename: str = f'{book_name}.txt'
-                self.storage.save(content, filename)
+                storage.save(content, filename)
 
-    def download_images_by_urls(self, images_url: list):
+    def download_images_by_urls(self, images_url: list, storage: StorageAbstract):
         for image_url in images_url:
             try:
                 content: bytes = self.get_content(image_url)
@@ -99,7 +100,7 @@ class BooksDownloader:
 
             else:
                 image_name: str = [i for i in unquote(image_url).split('/') if i][-1]
-                self.storage.save(content, image_name)
+                storage.save(content, image_name)
 
     def get_books_information(self, urls:list) -> list:
         books_information: list = []
