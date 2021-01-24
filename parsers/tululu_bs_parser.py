@@ -55,6 +55,14 @@ class TululuBsParser(BsParserAbstract):
         else:
             return comments
 
+    def parse_genre(self, soup):
+        try:
+            genre = soup.find('a', title=lambda x: x and 'перейти к книгам этого жанра' in x).text
+        except Exception as _err:
+            pass
+        else:
+            return genre
+
     def parse(self, content: str, url: str):
         parsed_url: ParseResult = urlparse(url)
         site_url: str = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
@@ -68,6 +76,7 @@ class TululuBsParser(BsParserAbstract):
             'image_url': urljoin(site_url, self.parse_image_url(soup)),
             'text': self.parse_text(soup),
             'comments': self.parse_comments(soup) or [],
+            'genre': self.parse_genre(soup),
             'url': urljoin(site_url, self.parse_url(soup))
         }
 
