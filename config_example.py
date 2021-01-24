@@ -1,6 +1,6 @@
 # paths
-images_path = ''
-books_path = ''
+images_path: str = ''
+books_path: str = ''
 
 proxy_verifing_url: str = 'https://api.ipify.org?format=json'
 
