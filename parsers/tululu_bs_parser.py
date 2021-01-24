@@ -47,6 +47,14 @@ class TululuBsParser(BsParserAbstract):
         else:
             return url
 
+    def parse_comments(self, soup):
+        try:
+            comments = [i.contents[-1].text for i in soup.find_all('div', class_="texts")]
+        except Exception as _err:
+            pass
+        else:
+            return comments
+
     def parse(self, content: str, url: str):
         parsed_url: ParseResult = urlparse(url)
         site_url: str = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
@@ -59,6 +67,7 @@ class TululuBsParser(BsParserAbstract):
             'author': author,
             'image_url': urljoin(site_url, self.parse_image_url(soup)),
             'text': self.parse_text(soup),
+            'comments': self.parse_comments(soup) or [],
             'url': urljoin(site_url, self.parse_url(soup))
         }
 
