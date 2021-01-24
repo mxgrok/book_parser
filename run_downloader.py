@@ -72,7 +72,8 @@ if __name__ == '__main__':
             config.user_agents
         )
 
-    if not all((hasattr(config, 'images_path'), hasattr(config, 'books_path'))):
+    if not all((hasattr(config, 'images_path'), hasattr(config, 'books_path'))) \
+            or not all((config.images_path, config.books_path)):
         raise ValueError("You must setting paths in config file")
 
     generation_template: str = 'https://tululu.org/b{}/'
