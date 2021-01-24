@@ -134,3 +134,7 @@ books
 .idea
 
 config.py
+
+# exclude images and books dirs
+books
+img
