@@ -1,14 +1,12 @@
-images_path = 'C:\\Users\\mxgrok\\projects\\book_parser\\img'
-books_path = 'C:\\Users\\mxgrok\\projects\\book_parser\\books'
-proxy_verifing_url = 'https://api.ipify.org?format=json'
+# paths
+images_path = ''
+books_path = ''
+
+proxy_verifing_url: str = 'https://api.ipify.org?format=json'
 
 redirected_codes: tuple = (301, 302)
-proxies: list = [
-    '37.135.121.179:80',
-    '84.17.51.209:3128',
-    '84.17.51.212:3128',
-    '84.17.51.213:3128',
-]
+
+proxies: list = []
 
 user_agents: list = [
     'Mozilla/5.0 (compatible; U; ABrowse 0.6; Syllable) AppleWebKit/420+ (KHTML, like Gecko)',
