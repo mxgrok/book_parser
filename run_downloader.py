@@ -43,6 +43,10 @@ def parse_params() -> argparse.Namespace:
         default='10', type=int,
         help="Setting start value for url generation, default is 10. End id must be greater than start id!"
     )
+    parser.add_argument(
+        "-p", "--use_proxy", type=bool,
+        help="If you want to use proxies set proxies list in config file"
+    )
     args = parser.parse_args()
 
     return args
@@ -50,15 +54,26 @@ def parse_params() -> argparse.Namespace:
 
 if __name__ == '__main__':
     args = parse_params()
-    proxies_pool = ProxiesPool(config.proxies, config.proxy_verifing_url)
     tululu_parser: BsParserAbstract = TululuBsParser()
 
-    downloader = DownloaderThroughProxy(
-        proxies_pool,
-        config.redirected_codes,
-        tululu_parser,
-        config.user_agents
-    )
+    if args.use_proxy and hasattr(config, 'proxies'):
+        proxies_pool = ProxiesPool(config.proxies, config.proxy_verifing_url)
+
+        downloader = DownloaderThroughProxy(
+            proxies_pool,
+            config.redirected_codes,
+            tululu_parser,
+            config.user_agents
+        )
+    else:
+        downloader = Downloader(
+            config.redirected_codes,
+            tululu_parser,
+            config.user_agents
+        )
+
+    if not all((hasattr(config, 'images_path'), hasattr(config, 'books_path'))):
+        raise ValueError("You must setting paths in config file")
 
     generation_template: str = 'https://tululu.org/b{}/'
     page_urls = generate_urls(generation_template, args.start_id, args.end_id)
