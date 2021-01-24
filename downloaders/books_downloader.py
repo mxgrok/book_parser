@@ -1,5 +1,6 @@
 import random
 import traceback
+from urllib.parse import unquote
 
 import requests
 import logging
@@ -59,15 +60,10 @@ class BooksDownloader:
 
         return response.content
 
-    def get_book_content_by_url(self, url) -> bytes:
-
-        content: bytes = self.get_response(url).content
-        return content
-
     def download_books_by_urls(self, books: list):
         for book in books:
             try:
-                content: bytes = self.get_book_content_by_url(book.get('url'))
+                content: bytes = self.get_content(book.get('url'))
 
             except ResponseRedirectException as _err:
                 logger.error(f"Current page: {book.get('url')} was redirected")
@@ -78,12 +74,32 @@ class BooksDownloader:
                     traceback.TracebackException.from_exception(_err).format()
                 )
                 logger.error(error)
-                break
+                continue
 
             else:
                 book_name: str = book.get('title')
                 filename: str = f'{book_name}.txt'
                 self.storage.save(content, filename)
+
+    def download_images_by_urls(self, images_url: list):
+        for image_url in images_url:
+            try:
+                content: bytes = self.get_content(image_url)
+
+            except ResponseRedirectException as _err:
+                logger.error(f"Current page: {image_url} was redirected")
+                continue
+
+            except Exception as _err:
+                error: str = ''.join(
+                    traceback.TracebackException.from_exception(_err).format()
+                )
+                logger.error(error)
+                continue
+
+            else:
+                image_name: str = [i for i in unquote(image_url).split('/') if i][-1]
+                self.storage.save(content, image_name)
 
     def get_books_information(self, urls:list) -> list:
         books_information: list = []
