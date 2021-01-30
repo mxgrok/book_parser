@@ -21,7 +21,7 @@ class FileSystemStorage(StorageAbstract):
             self.create_file_system_path()
 
         unique: str = str(uuid.uuid4())
-        name = f'{unique}-name'
+        name = f'{unique}-{name}'
 
         file_path: str = os.path.join(
             self.file_system_path,
