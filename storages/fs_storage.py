@@ -1,4 +1,5 @@
 import os
+import uuid
 
 from pathvalidate import sanitize_filename, sanitize_filepath
 
@@ -18,6 +19,9 @@ class FileSystemStorage(StorageAbstract):
     def save(self, content: bytes, name: str):
         if not self.is_file_system_path_exists:
             self.create_file_system_path()
+
+        unique: str = str(uuid.uuid4())
+        name = f'{unique}-name'
 
         file_path: str = os.path.join(
             self.file_system_path,
