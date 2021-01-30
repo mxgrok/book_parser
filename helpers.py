@@ -1,11 +1,20 @@
 
 
-class Helpers:
+class Structure:
 
-    @classmethod
-    def clean_url(cls, url: str) -> str:
-        patterns: tuple = ('.', 'https', 'http', ':', '/', '?', '&', '_', '=')
-        for pattern in patterns:
-            url = '_'.join(i for i in url.replace(pattern, ' ').split() if i)
+    def __init__(self, data: dict):
+        self.__populate(data)
 
-        return url
+    def __populate(self, data: dict):
+        for key, value in data.items():
+            if isinstance(value, (list, tuple)):
+               setattr(
+                   self, key, [Structure(x) if isinstance(x, dict) else x for x in value]
+               )
+            else:
+               setattr(
+                   self, key, Structure(value) if isinstance(value, dict) else value
+               )
+
+    def __getattr__(self, item):
+        return
