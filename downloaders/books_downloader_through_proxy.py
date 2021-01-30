@@ -13,11 +13,12 @@ from storages.storage_abstract import StorageAbstract
 
 class DownloaderThroughProxy(Downloader):
 
-    def __init__(self, proxies_pool: ProxiesPool, redirected_codes: tuple,
+    def __init__(self, proxies_pool: ProxiesPool,
                  parser: BsParserAbstract,
                  logger: Logger,
-                 user_agents: list = None):
-        super().__init__(redirected_codes, parser, logger, user_agents)
+                 user_agents: list = None,
+                 redirected_codes: tuple = (301, 302)):
+        super().__init__(parser, logger, user_agents, redirected_codes)
         self.proxies_pool = proxies_pool
 
         self.current_proxy: dict = dict()

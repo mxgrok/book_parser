@@ -93,15 +93,15 @@ if __name__ == '__main__':
 
         downloader = DownloaderThroughProxy(
             proxies_pool,
-            config.loader_options.redirected_codes,
             tululu_parser,
-            config.loader_options.user_agents
+            config.loader_options.user_agents,
+            redirected_codes=config.loader_options.redirected_codes
         )
     else:
         downloader = Downloader(
-            config.loader_options.redirected_codes,
             tululu_parser,
-            config.loader_options.user_agents
+            config.loader_options.user_agents,
+            redirected_codes=config.loader_options.redirected_codes
         )
 
     if not config.storage_options.images_path and config.storage_options.books_path:

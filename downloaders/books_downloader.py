@@ -15,10 +15,10 @@ from storages.storage_abstract import StorageAbstract
 class Downloader:
 
     def __init__(self,
-                 redirected_codes: tuple,
                  parser: BsParserAbstract,
                  logger: Logger,
-                 user_agents: list = None):
+                 user_agents: list = None,
+                 redirected_codes: tuple = (301, 302)):
         self.logger = logger
         self.parser: BsParserAbstract = parser
         self.redirected_codes: tuple = redirected_codes
