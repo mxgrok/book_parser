@@ -1,0 +1,14 @@
+storage_options:
+#    images: some path
+#    books:  some path
+
+loader_options:
+    proxy_verifing_url: https://api.ipify.org?format=json
+    proxies:
+#        - proxy_server:port
+    user_agents:
+#        - user agent
+
+    redirected_codes:
+        - 301
+        - 302
