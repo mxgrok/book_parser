@@ -7,7 +7,7 @@ import yaml
 
 from custom_logger import CustomLoggerSingleton
 from downloaders.books_downloader import Downloader
-from helpers import Structure
+from helpers import ConfigStructure
 from parsers.bs_parser_abstract import BsParserAbstract
 from parsers.tululu_bs_parser import TululuBsParser
 from downloaders.books_downloader_through_proxy import DownloaderThroughProxy
@@ -70,14 +70,14 @@ def parse_params() -> argparse.Namespace:
     return args
 
 
-def parse_config(config_path: str) -> Structure:
+def parse_config(config_path: str) -> ConfigStructure:
 
     if not os.path.exists(config_path):
         raise ValueError ("You should create config.yml or specify the path to the configuration yml file")
 
     with open(config_path, 'r') as f:
         values_yaml = yaml.load(f, Loader=yaml.FullLoader)
-        yaml_struct: Structure = Structure(values_yaml)
+        yaml_struct: ConfigStructure = ConfigStructure(values_yaml)
 
         return yaml_struct
 
@@ -85,7 +85,7 @@ def parse_config(config_path: str) -> Structure:
 if __name__ == '__main__':
     args = parse_params()
     tululu_parser: BsParserAbstract = TululuBsParser()
-    config: Structure = parse_config(args.config)
+    config: ConfigStructure = parse_config(args.config)
     logger: Logger = CustomLoggerSingleton('book_parser', args.loglevel).logger
 
     if args.use_proxy and config.loader_options.proxies:

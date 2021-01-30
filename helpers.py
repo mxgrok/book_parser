@@ -1,6 +1,6 @@
 
 
-class Structure:
+class ConfigStructure:
 
     def __init__(self, data: dict):
         self.__populate(data)
@@ -9,11 +9,11 @@ class Structure:
         for key, value in data.items():
             if isinstance(value, (list, tuple)):
                setattr(
-                   self, key, [Structure(x) if isinstance(x, dict) else x for x in value]
+                   self, key, [ConfigStructure(item) if isinstance(item, dict) else item for item in value]
                )
             else:
                setattr(
-                   self, key, Structure(value) if isinstance(value, dict) else value
+                   self, key, ConfigStructure(value) if isinstance(value, dict) else value
                )
 
     def __getattr__(self, item):
