@@ -7,7 +7,7 @@ loader_options:
     proxies:
 #        - proxy_server:port
     user_agents:
-#        - user agent
+        - book_parser
 
     redirected_codes:
         - 301
