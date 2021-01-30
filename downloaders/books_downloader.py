@@ -1,5 +1,4 @@
 import random
-import traceback
 from logging import Logger
 from urllib.parse import unquote
 
