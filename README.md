@@ -1,15 +1,27 @@
 # book_parser
+A simple python parser written just for educational purposes.
+
 ### Setup
 - install python3
 - install requirements:
-
 ```
 pip3 install -r requirements.txt
 ```
 
-- copy config_example.py as config.py
-- set images and books path
-- if you want to use proxies set proxies list in config.py file
+- copy config_example.yml as config.yml
+- set images and books path in this section:
+``` yaml
+storage_options:
+    images_path: some you file system path
+    books_path:  some you file system path
+```
+- if you want to use proxies set proxies list in config.yml file
+``` yaml
+    proxies:
+        - proxy_server1:port
+        - proxy_server2:port
+        - proxy_server3:port
+```
 
 ### Usage
 run downloader with command
