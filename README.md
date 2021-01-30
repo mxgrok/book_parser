@@ -34,5 +34,18 @@ you need to know end id must be greater than start id!
 
 if you want to use proxies set proxies list in config.py and add one more arg: `-p true`
 
+Also you able to change logging level by `-l` argument:
+ ```
+ -l logging_level
+ ```
+Available logging levels:
+- critical
+- fatal
+- error
+- warning
+- info
+- debug
+
+
 ###  The purpose of the project
 The code is written for educational purposes in the dvmn.org online course for web developers.
