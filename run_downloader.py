@@ -1,6 +1,7 @@
 import argparse
 import os
 
+import urllib3
 import yaml
 
 from downloaders.books_downloader import Downloader
@@ -14,6 +15,7 @@ from storages.storage_abstract import StorageAbstract
 
 
 def run_downloader(downloader: Downloader, page_urls: list, images_path: str, books_path: str):
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     books_storage: StorageAbstract = FileSystemStorage(books_path)
     image_storage: StorageAbstract = FileSystemStorage(images_path)
     book_pages_info: list = downloader.get_books_information(page_urls)

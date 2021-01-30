@@ -5,7 +5,6 @@ from urllib.parse import unquote
 import requests
 import logging
 
-import urllib3
 from requests.structures import CaseInsensitiveDict
 
 from exceptions import ResponseRedirectException
@@ -36,8 +35,6 @@ class Downloader:
             raise ResponseRedirectException
 
     def get_response(self, url: str, proxies: dict = None, timeout: int = 30) -> requests.Response:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
         headers: CaseInsensitiveDict = requests.utils.default_headers()
         user_agent: dict = self.get_user_agent()
         if user_agent:
