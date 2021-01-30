@@ -1,6 +1,6 @@
 storage_options:
-#    images: some path
-#    books:  some path
+#    images_path: some path
+#    books_path:  some path
 
 loader_options:
     proxy_verifing_url: https://api.ipify.org?format=json
