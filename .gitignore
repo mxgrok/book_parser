@@ -133,7 +133,7 @@ books
 # ide files
 .idea
 
-config.py
+config.yml
 
 # exclude images and books dirs
 books
