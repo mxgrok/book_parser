@@ -59,7 +59,8 @@ class Downloader:
     def download_books_by_urls(self, books: list, storage: StorageAbstract):
         for book in books:
             try:
-                content: bytes = self.get_content(book.get('url'))
+                response: requests.Response = self.get_response(book.get('url'))
+                content: bytes = response.content.decode(response.encoding).encode()
 
             except ResponseRedirectException as _err:
                 self.logger.error(f"Current page: {book.get('url')} was redirected")
