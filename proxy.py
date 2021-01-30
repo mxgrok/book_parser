@@ -1,25 +1,27 @@
-import logging
+from logging import Logger
 
 import requests
 import urllib3
 
-logger = logging.getLogger()
-
 
 class Proxy:
 
-    def __init__(self, proxy: str, check_by_url: str = None, proxy_types: tuple = ('http', 'https')):
+    def __init__(self,
+                 proxy: str,
+                 logger: Logger,
+                 check_by_url: str = None,
+                 proxy_types: tuple = ('http', 'https')):
         self.proxy: str = proxy
         self.proxy_types: tuple = proxy_types
         self.check_by_url: str = check_by_url
+        self.logger = logger
 
-    @staticmethod
-    def is_valid(proxies: dict, check_by_url: str) -> bool:
+    def is_valid(self, proxies: dict, check_by_url: str) -> bool:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         try:
             requests.get(check_by_url, proxies=proxies, timeout=1, verify=False)
         except (requests.exceptions.ProxyError, requests.exceptions.ConnectTimeout):
-            logger.debug(f'Not valid proxy: {proxies}')
+            self.logger.debug(f'Not valid proxy: {proxies}')
         else:
             return True
 
@@ -37,16 +39,21 @@ class Proxy:
 
 
 class ProxiesPool:
-    
-    def __init__(self, proxies_list: list, check_by_url: str = None, proxy_types: tuple = ('http', 'https')):
+
+    def __init__(self,
+                 proxies_list: list,
+                 logger: Logger,
+                 check_by_url: str = None,
+                 proxy_types: tuple = ('http', 'https')):
         self.proxy_types: tuple = proxy_types
         self.check_by_url: str = check_by_url
         self.proxies_list: list = proxies_list
         self.proxies_pool: list = []
+        self.logger = logger
 
     def get(self):
         for item in self.proxies_list:
-            proxy_object: dict = Proxy(item, self.check_by_url, self.proxy_types).set()
+            proxy_object: dict = Proxy(item, self.logger, self.check_by_url, self.proxy_types).set()
             if proxy_object:
                 yield proxy_object
 

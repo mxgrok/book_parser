@@ -1,9 +1,11 @@
 import argparse
 import os
+from logging import Logger
 
 import urllib3
 import yaml
 
+from custom_logger import CustomLoggerSingleton
 from downloaders.books_downloader import Downloader
 from helpers import Structure
 from parsers.bs_parser_abstract import BsParserAbstract
@@ -14,13 +16,13 @@ from storages.fs_storage import FileSystemStorage
 from storages.storage_abstract import StorageAbstract
 
 
-def run_downloader(downloader: Downloader, page_urls: list, images_path: str, books_path: str):
+def run_downloader(downloader: Downloader, page_urls: list, images_path: str, books_path: str, logger: Logger):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     books_storage: StorageAbstract = FileSystemStorage(books_path)
     image_storage: StorageAbstract = FileSystemStorage(images_path)
     book_pages_info: list = downloader.get_books_information(page_urls)
 
-    print(book_pages_info)
+    logger.info(book_pages_info)
 
     downloader.download_books_by_urls(book_pages_info, books_storage)
     img_urls: list = [i.get('image_url') for i in book_pages_info if i.get('image_url')]
@@ -57,6 +59,12 @@ def parse_params() -> argparse.Namespace:
         default='config.yml',
         help="Specify the path to the configuration file, defualt config.yml"
     )
+
+    parser.add_argument(
+        "-l", "--loglevel", type=str,
+        default='info',
+        help="Logging level: critical, fatal, error, warning, info, debug"
+    )
     args = parser.parse_args()
 
     return args
@@ -78,9 +86,10 @@ if __name__ == '__main__':
     args = parse_params()
     tululu_parser: BsParserAbstract = TululuBsParser()
     config: Structure = parse_config(args.config)
+    logger: Logger = CustomLoggerSingleton('book_parser', args.loglevel).logger
 
     if args.use_proxy and config.loader_options.proxies:
-        proxies_pool = ProxiesPool(config.loader_options.proxies, config.loader_options.proxy_verifing_url)
+        proxies_pool = ProxiesPool(config.loader_options.proxies, logger, config.loader_options.proxy_verifing_url)
 
         downloader = DownloaderThroughProxy(
             proxies_pool,
@@ -100,4 +109,10 @@ if __name__ == '__main__':
 
     generation_template: str = 'https://tululu.org/b{}/'
     page_urls = generate_urls(generation_template, args.start_id, args.end_id)
-    run_downloader(downloader, page_urls, config.storage_options.images_path, config.storage_options.books_path)
+    run_downloader(
+        downloader,
+        page_urls,
+        config.storage_options.images_path,
+        config.storage_options.books_path,
+        logger
+    )

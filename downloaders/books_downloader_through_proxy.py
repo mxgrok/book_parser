@@ -1,8 +1,8 @@
 import traceback
+from logging import Logger
 from urllib.parse import unquote
 
 import requests
-import logging
 
 from downloaders.books_downloader import Downloader
 from exceptions import ProxiesPoolIsemptyExeption, ResponseRedirectException
@@ -11,16 +11,13 @@ from proxy import ProxiesPool
 from storages.storage_abstract import StorageAbstract
 
 
-logger = logging.getLogger()
-logger.setLevel('DEBUG')
-
-
 class DownloaderThroughProxy(Downloader):
 
     def __init__(self, proxies_pool: ProxiesPool, redirected_codes: tuple,
                  parser: BsParserAbstract,
+                 logger: Logger,
                  user_agents: list = None):
-        super().__init__(redirected_codes, parser, user_agents)
+        super().__init__(redirected_codes, parser, logger, user_agents)
         self.proxies_pool = proxies_pool
 
         self.current_proxy: dict = dict()
@@ -34,7 +31,7 @@ class DownloaderThroughProxy(Downloader):
             raise ProxiesPoolIsemptyExeption('Proxies pool is empty')
 
     def reset_proxy(self):
-        logger.info('Setting new proxy...')
+        self.logger.info('Setting new proxy...')
         self.current_proxy = dict()
         self.set_new_proxy()
 
@@ -60,18 +57,18 @@ class DownloaderThroughProxy(Downloader):
             try:
                 content: bytes = self.get_content_by_url(book.get('url'))
             except ProxiesPoolIsemptyExeption as _err:
-                logger.error(f"Can't get new proxy: {_err}")
+                self.logger.error(f"Can't get new proxy: {_err}")
                 break
 
             except ResponseRedirectException as _err:
-                logger.error(f"Current page: {book.get('url')} was redirected")
+                self.logger.error(f"Current page: {book.get('url')} was redirected")
                 continue
 
             except Exception as _err:
                 error: str = ''.join(
                     traceback.TracebackException.from_exception(_err).format()
                 )
-                logger.error(error)
+                self.logger.error(error)
                 continue
 
             else:
@@ -84,25 +81,25 @@ class DownloaderThroughProxy(Downloader):
             try:
                 content: bytes = self.get_content_by_url(image_url)
             except ProxiesPoolIsemptyExeption as _err:
-                logger.error(f"Can't get new proxy: {_err}")
+                self.logger.error(f"Can't get new proxy: {_err}")
                 break
 
             except ResponseRedirectException as _err:
-                logger.error(f"Current page: {image_url} was redirected")
+                self.logger.error(f"Current page: {image_url} was redirected")
                 continue
 
             except Exception as _err:
                 error: str = ''.join(
                     traceback.TracebackException.from_exception(_err).format()
                 )
-                logger.error(error)
+                self.logger.error(error)
                 continue
 
             else:
                 image_name: str = [i for i in unquote(image_url).split('/') if i][-1]
                 storage.save(content, image_name)
 
-    def get_books_information(self, urls:list) -> list:
+    def get_books_information(self, urls: list) -> list:
         books_information: list = []
         for url in urls:
             try:

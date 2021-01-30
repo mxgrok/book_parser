@@ -1,9 +1,9 @@
 import random
 import traceback
+from logging import Logger
 from urllib.parse import unquote
 
 import requests
-import logging
 
 from requests.structures import CaseInsensitiveDict
 
@@ -12,16 +12,14 @@ from parsers.bs_parser_abstract import BsParserAbstract
 from storages.storage_abstract import StorageAbstract
 
 
-logger = logging.getLogger()
-logger.setLevel('DEBUG')
-
-
 class Downloader:
 
     def __init__(self,
                  redirected_codes: tuple,
                  parser: BsParserAbstract,
+                 logger: Logger,
                  user_agents: list = None):
+        self.logger = logger
         self.parser: BsParserAbstract = parser
         self.redirected_codes: tuple = redirected_codes
         self.user_agents: list = user_agents
@@ -64,14 +62,14 @@ class Downloader:
                 content: bytes = self.get_content(book.get('url'))
 
             except ResponseRedirectException as _err:
-                logger.error(f"Current page: {book.get('url')} was redirected")
+                self.logger.error(f"Current page: {book.get('url')} was redirected")
                 continue
 
             except Exception as _err:
                 error: str = ''.join(
                     traceback.TracebackException.from_exception(_err).format()
                 )
-                logger.error(error)
+                self.logger.error(error)
                 continue
 
             else:
@@ -85,14 +83,14 @@ class Downloader:
                 content: bytes = self.get_content(image_url)
 
             except ResponseRedirectException as _err:
-                logger.error(f"Current page: {image_url} was redirected")
+                self.logger.error(f"Current page: {image_url} was redirected")
                 continue
 
             except Exception as _err:
                 error: str = ''.join(
                     traceback.TracebackException.from_exception(_err).format()
                 )
-                logger.error(error)
+                self.logger.error(error)
                 continue
 
             else:
