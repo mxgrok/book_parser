@@ -1,7 +1,10 @@
 import argparse
+import os
 
-import config
+import yaml
+
 from downloaders.books_downloader import Downloader
+from helpers import Structure
 from parsers.bs_parser_abstract import BsParserAbstract
 from parsers.tululu_bs_parser import TululuBsParser
 from downloaders.books_downloader_through_proxy import DownloaderThroughProxy
@@ -47,35 +50,52 @@ def parse_params() -> argparse.Namespace:
         "-p", "--use_proxy", type=bool,
         help="If you want to use proxies set proxies list in config file"
     )
+    parser.add_argument(
+        "-c", "--config", type=str,
+        default='config.yml',
+        help="Specify the path to the configuration file, defualt config.yml"
+    )
     args = parser.parse_args()
 
     return args
 
 
+def parse_config(config_path: str) -> Structure:
+
+    if not os.path.exists(config_path):
+        raise ValueError ("You should create config.yml or specify the path to the configuration yml file")
+
+    with open(config_path, 'r') as f:
+        values_yaml = yaml.load(f, Loader=yaml.FullLoader)
+        yaml_struct: Structure = Structure(values_yaml)
+
+        return yaml_struct
+
+
 if __name__ == '__main__':
     args = parse_params()
     tululu_parser: BsParserAbstract = TululuBsParser()
+    config: Structure = parse_config(args.config)
 
-    if args.use_proxy and hasattr(config, 'proxies'):
-        proxies_pool = ProxiesPool(config.proxies, config.proxy_verifing_url)
+    if args.use_proxy and config.loader_options.proxies:
+        proxies_pool = ProxiesPool(config.loader_options.proxies, config.loader_options.proxy_verifing_url)
 
         downloader = DownloaderThroughProxy(
             proxies_pool,
-            config.redirected_codes,
+            config.loader_options.redirected_codes,
             tululu_parser,
-            config.user_agents
+            config.loader_options.user_agents
         )
     else:
         downloader = Downloader(
-            config.redirected_codes,
+            config.loader_options.redirected_codes,
             tululu_parser,
-            config.user_agents
+            config.loader_options.user_agents
         )
 
-    if not all((hasattr(config, 'images_path'), hasattr(config, 'books_path'))) \
-            or not all((config.images_path, config.books_path)):
+    if not config.storage_options.images_path and config.storage_options.books_path:
         raise ValueError("You must setting paths in config file")
 
     generation_template: str = 'https://tululu.org/b{}/'
     page_urls = generate_urls(generation_template, args.start_id, args.end_id)
-    run_downloader(downloader, page_urls, config.images_path, config.books_path)
+    run_downloader(downloader, page_urls, config.storage_options.images_path, config.storage_options.books_path)
