@@ -56,7 +56,8 @@ class DownloaderThroughProxy(Downloader):
     def download_books_by_urls(self, books: list, storage: StorageAbstract):
         for book in books:
             try:
-                content: bytes = self.get_content_by_url(book.get('url'))
+                response: requests.Response = self.get_response(book.get('url'))
+                content: bytes = response.content.decode(response.encoding).encode()
             except ProxiesPoolIsemptyExeption as _err:
                 self.logger.error(f"Can't get new proxy: {_err}")
                 break
