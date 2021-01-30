@@ -42,6 +42,9 @@ class DownloaderThroughProxy(Downloader):
                 self.set_new_proxy()
                 response: requests.Response = self.get_response(url, proxies=self.current_proxy)
 
+            except ResponseRedirectException as _err:
+                break
+
             except requests.exceptions.ProxyError as _err:
                 self.reset_proxy()
                 continue
@@ -66,13 +69,6 @@ class DownloaderThroughProxy(Downloader):
                 self.logger.error(f"Current page: {book.get('url')} was redirected")
                 continue
 
-            except Exception as _err:
-                error: str = ''.join(
-                    traceback.TracebackException.from_exception(_err).format()
-                )
-                self.logger.error(error)
-                continue
-
             else:
                 book_name: str = book.get('title')
                 filename: str = f'{book_name}.txt'
@@ -90,13 +86,6 @@ class DownloaderThroughProxy(Downloader):
                 self.logger.error(f"Current page: {image_url} was redirected")
                 continue
 
-            except Exception as _err:
-                error: str = ''.join(
-                    traceback.TracebackException.from_exception(_err).format()
-                )
-                self.logger.error(error)
-                continue
-
             else:
                 image_name: str = [i for i in unquote(image_url).split('/') if i][-1]
                 storage.save(content, image_name)
@@ -104,13 +93,12 @@ class DownloaderThroughProxy(Downloader):
     def get_books_information(self, urls: list) -> list:
         books_information: list = []
         for url in urls:
-            try:
-                content: requests.Response = self.get_response_with_proxies_pool(url)
-                book_information: dict = self.parser.parse(content.text, url)
+            content: requests.Response = self.get_response_with_proxies_pool(url)
 
-            except Exception as _err:
+            if not content:
                 continue
-            else:
-                books_information.append(book_information)
+
+            book_information: dict = self.parser.parse(content.text, url)
+            books_information.append(book_information)
 
         return books_information

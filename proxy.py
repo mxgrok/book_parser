@@ -1,6 +1,7 @@
 from logging import Logger
 
 import requests
+from requests.exceptions import ProxyError, ConnectTimeout, ConnectionError
 import urllib3
 
 
@@ -20,7 +21,7 @@ class Proxy:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         try:
             requests.get(check_by_url, proxies=proxies, timeout=1, verify=False)
-        except (requests.exceptions.ProxyError, requests.exceptions.ConnectTimeout):
+        except (ProxyError, ConnectTimeout, ConnectionError):
             self.logger.debug(f'Not valid proxy: {proxies}')
         else:
             return True

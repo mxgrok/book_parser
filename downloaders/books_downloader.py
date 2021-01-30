@@ -66,13 +66,6 @@ class Downloader:
                 self.logger.error(f"Current page: {book.get('url')} was redirected")
                 continue
 
-            except Exception as _err:
-                error: str = ''.join(
-                    traceback.TracebackException.from_exception(_err).format()
-                )
-                self.logger.error(error)
-                continue
-
             else:
                 book_name: str = book.get('title')
                 filename: str = f'{book_name}.txt'
@@ -87,28 +80,16 @@ class Downloader:
                 self.logger.error(f"Current page: {image_url} was redirected")
                 continue
 
-            except Exception as _err:
-                error: str = ''.join(
-                    traceback.TracebackException.from_exception(_err).format()
-                )
-                self.logger.error(error)
-                continue
-
             else:
-                image_name: str = [i for i in unquote(image_url).split('/') if i][-1]
+                image_name: str = [_ for _ in unquote(image_url).split('/') if _][-1]
                 storage.save(content, image_name)
 
     def get_books_information(self, urls:list) -> list:
         books_information: list = []
         for url in urls:
-            try:
-                content: requests.Response = self.get_response(url)
-                book_information: dict = self.parser.parse(content.text, url)
-
-            except Exception as _err:
-                continue
-            else:
-                books_information.append(book_information)
+            content: requests.Response = self.get_response(url)
+            book_information: dict = self.parser.parse(content.text, url)
+            books_information.append(book_information)
 
         return books_information
 
