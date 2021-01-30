@@ -20,7 +20,7 @@ class FileSystemStorage(StorageAbstract):
             self.create_file_system_path()
 
         file_path: str = os.path.join(
-            sanitize_filepath(self.file_system_path, platform='auto'),
+            self.file_system_path,
             sanitize_filename(name)
         )
         with open(file_path, 'wb') as file:
