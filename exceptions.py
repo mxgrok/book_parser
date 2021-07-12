@@ -1,17 +1,11 @@
-
-
 class BasicException(Exception):
     """Generic app exception"""
     pass
 
 
-class ProxiesPoolIsemptyExeption(BasicException):
+class BookDownloadLinkNotFound(BasicException):
     pass
 
 
 class ResponseRedirectException(BasicException):
-    pass
-
-
-class ParserConfigIsEmptyException(BasicException):
     pass

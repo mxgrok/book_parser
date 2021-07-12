@@ -2,3 +2,4 @@ beautifulsoup4==4.9.3
 lxml==4.6.2
 requests==2.22.0
 pyyaml==5.4.1
+pathvalidate==2.4.1

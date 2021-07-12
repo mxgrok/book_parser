@@ -137,4 +137,4 @@ config.yml
 
 # exclude images and books dirs
 books
-img
+images

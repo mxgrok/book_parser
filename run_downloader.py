@@ -1,37 +1,105 @@
 import argparse
 import os
-from logging import Logger
+import uuid
+from urllib.parse import urljoin, unquote
+from contextlib import suppress
 
-import urllib3
-import yaml
+from pathvalidate import sanitize_filename
+import requests
+from bs4 import BeautifulSoup
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
 
-from custom_logger import CustomLoggerSingleton
-from downloaders.books_downloader import Downloader
-from helpers import ConfigStructure
-from parsers.bs_parser_abstract import BsParserAbstract
-from parsers.tululu_bs_parser import TululuBsParser
-from downloaders.books_downloader_through_proxy import DownloaderThroughProxy
-from proxy import ProxiesPool
-from storages.fs_storage import FileSystemStorage
-from storages.storage_abstract import StorageAbstract
+from exceptions import BookDownloadLinkNotFound, ResponseRedirectException
 
 
-def run_downloader(downloader: Downloader, page_urls: list, images_path: str, books_path: str, logger: Logger):
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    books_storage: StorageAbstract = FileSystemStorage(books_path)
-    image_storage: StorageAbstract = FileSystemStorage(images_path)
-    book_pages_info: list = downloader.get_books_information(page_urls)
+def get_page(url):
+    response = requests.get(url, verify=False, allow_redirects=False)
+    response.raise_for_status()
+    raise_if_redirect(response)
 
-    logger.info(book_pages_info)
+    return response
 
-    downloader.download_books_by_urls(book_pages_info, books_storage)
-    img_urls: list = [i.get('image_url') for i in book_pages_info if i.get('image_url')]
-    downloader.download_images_by_urls(img_urls, image_storage)
+
+def raise_if_redirect(response):
+    if response.status_code not in (301, 302):
+        return
+    raise ResponseRedirectException
+
+
+def parse_book_page(response):
+    soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
+    download_book_link, download_image_link = None, None
+    with suppress(Exception):
+        title = soup.find('div', id='content').find('h1').text.strip()
+        title, author = [item.strip() for item in title.split('::')]
+        download_book_link = soup.select_one('a:-soup-contains("скачать txt")').get('href')
+        download_image_link = soup.find('div', class_='bookimage').find('a').find('img')['src']
+
+    if not download_book_link:
+        raise BookDownloadLinkNotFound
+
+    return {
+        'title': title,
+        'author': author,
+        'image_url': urljoin(response.request.url, download_image_link) if download_image_link else None,
+        'text': soup.findAll('table', class_='d_book')[1].find('tr').find('td').text,
+        'comments': [item.contents[-1].text for item in soup.find_all('div', class_="texts")],
+        'genres': [item.text for item in soup.find_all('a', title=lambda x: x and 'перейти к книгам этого жанра' in x)],
+        'url': urljoin(response.request.url, download_book_link)
+    }
+
+
+def download_and_save_book_to_fs(book_info, books_path):
+    response = get_page(book_info['url'])
+    book_content: bytes = response.content.decode(response.encoding).encode()
+
+    unique: str = str(uuid.uuid4())
+    sanitized_book_name = sanitize_filename(book_info['title'])
+    book_file_name = f"{unique}--{sanitized_book_name}.txt"
+
+    book_file_path: str = os.path.join(books_path, book_file_name)
+    with open(book_file_path, 'wb') as file:
+        file.write(book_content)
+
+
+def download_and_save_book_image_to_fs(book_info, images_path):
+    if not book_info.get('image_url'):
+        return
+
+    response = get_page(book_info['image_url'])
+    image_name = [_ for _ in unquote(book_info['image_url']).split('/') if _][-1]
+
+    unique: str = str(uuid.uuid4())
+    sanitized_book_name = sanitize_filename(image_name)
+    image_file_name = f"{unique}-{sanitized_book_name}"
+
+    image_file_path: str = os.path.join(images_path, image_file_name)
+    with open(image_file_path, 'wb') as file:
+        file.write(response.content)
+
+
+def run_tululu_downloader(urls: list, images_path: str = 'images', books_path: str = 'books'):
+    disable_warnings(InsecureRequestWarning)
+    os.makedirs(images_path, exist_ok=True)
+    os.makedirs(books_path, exist_ok=True)
+
+    for url in urls:
+
+        try:
+            page_response = get_page(url)
+            book_info = parse_book_page(page_response)
+            download_and_save_book_to_fs(book_info, books_path)
+            download_and_save_book_image_to_fs(book_info, images_path)
+        except ResponseRedirectException:
+            print(f'Detected redirect with request to page: {url}')
+        except BookDownloadLinkNotFound:
+            print(f'Link for downloading book not found on page: {url}')
 
 
 def generate_urls(template: str, start_value: int, end_value: int) -> list:
     if end_value < start_value:
-        raise ValueError (f"End id must be greater than start id")
+        raise ValueError(f"End id must be greater than start id")
 
     end_value += 1
     urls: list = [template.format(i) for i in range(start_value, end_value)]
@@ -50,71 +118,14 @@ def parse_params() -> argparse.Namespace:
         default='10', type=int,
         help="Setting start value for url generation, default is 10. End id must be greater than start id!"
     )
-    parser.add_argument(
-        "-p", "--use_proxy", type=bool,
-        help="If you want to use proxies set proxies list in config file"
-    )
-    parser.add_argument(
-        "-c", "--config", type=str,
-        default='config.yml',
-        help="Specify the path to the configuration file, defualt config.yml"
-    )
 
-    parser.add_argument(
-        "-l", "--loglevel", type=str,
-        default='info',
-        help="Logging level: critical, fatal, error, warning, info, debug"
-    )
-    args = parser.parse_args()
-
-    return args
-
-
-def parse_config(config_path: str) -> ConfigStructure:
-
-    if not os.path.exists(config_path):
-        raise ValueError ("You should create config.yml or specify the path to the configuration yml file")
-
-    with open(config_path, 'r') as f:
-        values_yaml = yaml.load(f, Loader=yaml.FullLoader)
-        yaml_struct: ConfigStructure = ConfigStructure(values_yaml)
-
-        return yaml_struct
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_params()
-    tululu_parser: BsParserAbstract = TululuBsParser()
-    config: ConfigStructure = parse_config(args.config)
-    logger: Logger = CustomLoggerSingleton('book_parser', args.loglevel).logger
-
-    if args.use_proxy and config.loader_options.proxies:
-        proxies_pool = ProxiesPool(config.loader_options.proxies, logger, config.loader_options.proxy_verifing_url)
-
-        downloader = DownloaderThroughProxy(
-            proxies_pool,
-            tululu_parser,
-            logger,
-            config.loader_options.user_agents,
-            redirected_codes=config.loader_options.redirected_codes
-        )
-    else:
-        downloader = Downloader(
-            tululu_parser,
-            logger,
-            config.loader_options.user_agents,
-            redirected_codes=config.loader_options.redirected_codes
-        )
-
-    if not config.storage_options.images_path and config.storage_options.books_path:
-        raise ValueError("You must setting paths in config file")
 
     generation_template: str = 'https://tululu.org/b{}/'
     page_urls = generate_urls(generation_template, args.start_id, args.end_id)
-    run_downloader(
-        downloader,
-        page_urls,
-        config.storage_options.images_path,
-        config.storage_options.books_path,
-        logger
-    )
+
+    run_tululu_downloader(page_urls)
