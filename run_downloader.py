@@ -93,14 +93,14 @@ def run_downloader(urls: list, images_path: str = 'images', books_path: str = 'b
                 book[book_property_key] for book_property_key in ('url', 'title', 'image_url')
             )
             downloaded_book_fs_path = download_and_save_book_to_fs(book_url, book_title, books_path)
-            if not book_image_url:
-                continue
-            downloaded_book_image_fs_path = download_and_save_book_image_to_fs(book_image_url, images_path)
             print(
                 f'Book: "{book_title}" has been downloaded:\n'
                 f'book path: {downloaded_book_fs_path},\n'
-                f'book image path: {downloaded_book_image_fs_path}'
             )
+            if not book_image_url:
+                continue
+            downloaded_book_image_fs_path = download_and_save_book_image_to_fs(book_image_url, images_path)
+            print(f'book image path: {downloaded_book_image_fs_path}')
         except ResponseRedirectException:
             print(f'Detected redirect with request to page: {url}')
         except BookDownloadLinkNotFound:
