@@ -1,7 +1,7 @@
 import argparse
 import os
 import uuid
-from urllib.parse import urljoin, unquote
+from urllib.parse import urljoin, unquote, urlsplit
 from contextlib import suppress
 
 from pathvalidate import sanitize_filename
@@ -50,37 +50,37 @@ def parse_book_page(response):
     }
 
 
-def download_and_save_book_to_fs(book_info, books_path):
-    response = get_page(book_info['url'])
+def download_and_save_book_to_fs(book_url, book_title, books_path):
+    response = get_page(book_url)
     book_content: bytes = response.content.decode(response.encoding).encode()
 
-    unique: str = str(uuid.uuid4())
-    sanitized_book_name = sanitize_filename(book_info['title'])
-    book_file_name = f"{unique}--{sanitized_book_name}.txt"
+    unique_part_of_name: str = str(uuid.uuid4())
+    sanitized_book_name = sanitize_filename(book_title)
+    book_file_name = f"{unique_part_of_name}--{sanitized_book_name}.txt"
 
     book_file_path: str = os.path.join(books_path, book_file_name)
     with open(book_file_path, 'wb') as file:
         file.write(book_content)
 
+    return book_file_path
 
-def download_and_save_book_image_to_fs(book_info, images_path):
-    if not book_info.get('image_url'):
-        return
 
-    response = get_page(book_info['image_url'])
-    image_name = [_ for _ in unquote(book_info['image_url']).split('/') if _][-1]
+def download_and_save_book_image_to_fs(book_image_url, images_path):
+    response = get_page(book_image_url)
+    image_name = [_ for _ in unquote(urlsplit(book_image_url).path).split('/') if _][-1]
 
-    unique: str = str(uuid.uuid4())
-    sanitized_book_name = sanitize_filename(image_name)
-    image_file_name = f"{unique}-{sanitized_book_name}"
+    unique_part_of_name: str = str(uuid.uuid4())
+    sanitized_image_name = sanitize_filename(image_name)
+    image_file_name = f"{unique_part_of_name}-{sanitized_image_name}"
 
     image_file_path: str = os.path.join(images_path, image_file_name)
     with open(image_file_path, 'wb') as file:
         file.write(response.content)
 
+    return image_file_path
 
-def run_tululu_downloader(urls: list, images_path: str = 'images', books_path: str = 'books'):
-    disable_warnings(InsecureRequestWarning)
+
+def run_downloader(urls: list, images_path: str = 'images', books_path: str = 'books'):
     os.makedirs(images_path, exist_ok=True)
     os.makedirs(books_path, exist_ok=True)
 
@@ -88,9 +88,19 @@ def run_tululu_downloader(urls: list, images_path: str = 'images', books_path: s
 
         try:
             page_response = get_page(url)
-            book_info = parse_book_page(page_response)
-            download_and_save_book_to_fs(book_info, books_path)
-            download_and_save_book_image_to_fs(book_info, images_path)
+            book = parse_book_page(page_response)
+            book_url, book_title, book_image_url = (
+                book[book_property_key] for book_property_key in ('url', 'title', 'image_url')
+            )
+            downloaded_book_fs_path = download_and_save_book_to_fs(book_url, book_title, books_path)
+            if not book_image_url:
+                continue
+            downloaded_book_image_fs_path = download_and_save_book_image_to_fs(book_image_url, images_path)
+            print(
+                f'Book: "{book_title}" has been downloaded:\n'
+                f'book path: {downloaded_book_fs_path},\n'
+                f'book image path: {downloaded_book_image_fs_path}'
+            )
         except ResponseRedirectException:
             print(f'Detected redirect with request to page: {url}')
         except BookDownloadLinkNotFound:
@@ -125,7 +135,11 @@ def parse_params() -> argparse.Namespace:
 if __name__ == '__main__':
     args = parse_params()
 
+    disable_warnings(InsecureRequestWarning)
+
     tululu_urls_generation_template: str = 'https://tululu.org/b{}/'
+    books_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'books')
+    images_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'images')
     page_urls = generate_urls(tululu_urls_generation_template, args.start_id, args.end_id)
 
-    run_tululu_downloader(page_urls)
+    run_downloader(page_urls, images_path, books_path)
