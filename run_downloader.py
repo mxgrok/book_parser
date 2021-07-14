@@ -125,7 +125,7 @@ def parse_params() -> argparse.Namespace:
 if __name__ == '__main__':
     args = parse_params()
 
-    generation_template: str = 'https://tululu.org/b{}/'
-    page_urls = generate_urls(generation_template, args.start_id, args.end_id)
+    tululu_urls_generation_template: str = 'https://tululu.org/b{}/'
+    page_urls = generate_urls(tululu_urls_generation_template, args.start_id, args.end_id)
 
     run_tululu_downloader(page_urls)
