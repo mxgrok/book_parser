@@ -8,6 +8,14 @@ from urllib3.exceptions import InsecureRequestWarning
 from run_downloader import raise_if_redirect, get_page
 
 
+def get_next_page_url(response):
+    soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
+
+    with suppress(Exception):
+        next_page = urljoin(response.request.url, soup.find('span', class_='npage_select').next_sibling['href'])
+        return next_page
+
+
 def parse_category_page(response):
     soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
     with suppress(Exception):
@@ -20,12 +28,23 @@ def parse_category_page(response):
 
 
 def download_tululu_by_category(url):
-    response = get_page(url)
-    books_urls = parse_category_page(response)
-    print(len(books_urls), books_urls)
+    current_url = url
+
+    books_counter = 0
+
+    while True:
+        response = get_page(current_url)
+        books_urls = parse_category_page(response)
+        current_url = get_next_page_url(response)
+
+        if not current_url:
+            break
+
+        books_counter += len(books_urls)
+        print(books_counter, books_urls)
 
 
 if __name__ == '__main__':
     disable_warnings(InsecureRequestWarning)
-    category_url = 'https://tululu.org/l55/'
+    category_url = 'https://tululu.org/l55'
     download_tululu_by_category(category_url)
