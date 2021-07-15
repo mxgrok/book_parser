@@ -11,10 +11,10 @@ from run_downloader import raise_if_redirect, get_page
 def parse_category_page(response):
     soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
     with suppress(Exception):
-        books_urls = [
+        books_urls = set([
             urljoin(response.request.url, book_item.find('a')['href'])
             for book_item in soup.find_all('div', class_='bookimage')
-        ]
+        ])
 
         return books_urls
 
@@ -22,7 +22,7 @@ def parse_category_page(response):
 def download_tululu_by_category(url):
     response = get_page(url)
     books_urls = parse_category_page(response)
-    print(books_urls)
+    print(len(books_urls), books_urls)
 
 
 if __name__ == '__main__':
