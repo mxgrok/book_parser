@@ -80,7 +80,7 @@ def download_and_save_book_image_to_fs(book_image_url, images_path):
     return image_file_path
 
 
-def run_downloader(urls: list, images_path: str = 'images', books_path: str = 'books'):
+def download_tululu(urls: list, images_path: str = 'images', books_path: str = 'books'):
     os.makedirs(images_path, exist_ok=True)
     os.makedirs(books_path, exist_ok=True)
 
@@ -142,4 +142,4 @@ if __name__ == '__main__':
     images_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'images')
     page_urls = generate_urls(tululu_urls_generation_template, args.start_id, args.end_id)
 
-    run_downloader(page_urls, images_path, books_path)
+    download_tululu(page_urls, images_path, books_path)
