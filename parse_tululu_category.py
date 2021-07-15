@@ -15,7 +15,7 @@ def get_next_page_url(response):
     soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
 
     with suppress(Exception):
-        next_page = urljoin(response.request.url, soup.find('span', class_='npage_select').next_sibling['href'])
+        next_page = urljoin(response.request.url, soup.select_one('span.npage_select').nextSibling['href'])
         return next_page
 
 
@@ -23,8 +23,8 @@ def parse_category_page(response):
     soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
     with suppress(Exception):
         books_urls = list(set([
-            urljoin(response.request.url, book_item.find('a')['href'])
-            for book_item in soup.find_all('div', class_='bookimage')
+            urljoin(response.request.url, book_item.select_one('a')['href'])
+            for book_item in soup.select('div.bookimage')
         ]))
 
         return books_urls
@@ -51,7 +51,6 @@ def download_tululu_by_category(url, images_path, books_path, limit=None):
         books_counter += len(books_urls)
         print(books_counter, books_urls)
         download_tululu(books_urls, images_path, books_path)
-
 
 
 if __name__ == '__main__':
