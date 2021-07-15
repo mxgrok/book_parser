@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import uuid
 from urllib.parse import urljoin, unquote, urlsplit
@@ -31,10 +32,10 @@ def parse_book_page(response):
     soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
     download_book_link, download_image_link = None, None
     with suppress(Exception):
-        title = soup.find('div', id='content').find('h1').text.strip()
+        title = soup.select_one('div#content h1').text.strip()
         title, author = [item.strip() for item in title.split('::')]
         download_book_link = soup.select_one('a:-soup-contains("скачать txt")').get('href')
-        download_image_link = soup.find('div', class_='bookimage').find('a').find('img')['src']
+        download_image_link = soup.select_one('div.bookimage a img')['src']
 
     if not download_book_link:
         raise BookDownloadLinkNotFound
@@ -43,9 +44,9 @@ def parse_book_page(response):
         'title': title,
         'author': author,
         'image_url': urljoin(response.request.url, download_image_link) if download_image_link else None,
-        'text': soup.findAll('table', class_='d_book')[1].find('tr').find('td').text,
-        'comments': [item.contents[-1].text for item in soup.find_all('div', class_="texts")],
-        'genres': [item.text for item in soup.find_all('a', title=lambda x: x and 'перейти к книгам этого жанра' in x)],
+        'text': soup.select_one('table.d_book tr td').text,
+        'comments': [item.contents[-1].text for item in soup.select('div.texts')],
+        'genres': [item.text for item in soup.select('span.d_book a')],
         'url': urljoin(response.request.url, download_book_link)
     }
 
@@ -80,7 +81,20 @@ def download_and_save_book_image_to_fs(book_image_url, images_path):
     return image_file_path
 
 
-def download_tululu(urls: list, images_path: str = 'images', books_path: str = 'books'):
+def write_book_information_into_json_file(json_path: str, book_information: dict):
+    if not os.path.exists(json_path):
+        with open(json_path, 'w', encoding='utf-8') as new_json_file:
+            json.dump([], new_json_file, ensure_ascii=False)
+
+    with open(json_path, 'r', encoding='utf-8') as json_file:
+        current_data = json.load(json_file)
+
+    with open(json_path, 'w', encoding='utf-8') as json_file:
+        current_data.append(book_information)
+        json.dump(current_data, json_file, indent=4, sort_keys=True, ensure_ascii=False)
+
+
+def download_tululu(urls: list, images_path: str = 'images', books_path: str = 'books', json_file_path: str = 'book_info.json'):
     os.makedirs(images_path, exist_ok=True)
     os.makedirs(books_path, exist_ok=True)
 
@@ -89,18 +103,18 @@ def download_tululu(urls: list, images_path: str = 'images', books_path: str = '
         try:
             page_response = get_page(url)
             book = parse_book_page(page_response)
+            book_information = {_: __ for _, __ in book.items() if _ not in ('url', 'image_url')}
             book_url, book_title, book_image_url = (
                 book[book_property_key] for book_property_key in ('url', 'title', 'image_url')
             )
-            downloaded_book_fs_path = download_and_save_book_to_fs(book_url, book_title, books_path)
-            print(
-                f'Book: "{book_title}" has been downloaded:\n'
-                f'book path: {downloaded_book_fs_path},\n'
-            )
-            if not book_image_url:
-                continue
-            downloaded_book_image_fs_path = download_and_save_book_image_to_fs(book_image_url, images_path)
-            print(f'book image path: {downloaded_book_image_fs_path}')
+
+            book_information.update({
+                'book_path': download_and_save_book_to_fs(book_url, book_title, books_path),
+                'img_src': download_and_save_book_image_to_fs(book_image_url, images_path) if book_image_url else None
+            })
+
+            write_book_information_into_json_file(json_file_path, book_information)
+
         except ResponseRedirectException:
             print(f'Detected redirect with request to page: {url}')
         except BookDownloadLinkNotFound:
@@ -138,8 +152,6 @@ if __name__ == '__main__':
     disable_warnings(InsecureRequestWarning)
 
     tululu_urls_generation_template: str = 'https://tululu.org/b{}/'
-    books_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'books')
-    images_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'images')
     page_urls = generate_urls(tululu_urls_generation_template, args.start_id, args.end_id)
 
-    download_tululu(page_urls, images_path, books_path)
+    download_tululu(page_urls)
