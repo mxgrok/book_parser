@@ -1,5 +1,4 @@
 import os
-import time
 from contextlib import suppress
 from urllib.parse import urljoin
 
@@ -8,10 +7,11 @@ from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 
 from exceptions import ResponseRedirectException
-from run_downloader import get_page, download_tululu
+from run_downloader import get_page, download_tululu, parse_params
 
 
-def get_next_page_url(response):
+# FIXME: need to remove
+def get_next_page_url_bs_parse(response):
     soup: BeautifulSoup = BeautifulSoup(response.text, 'lxml')
 
     with suppress(Exception):
@@ -30,32 +30,51 @@ def parse_category_page(response):
         return books_urls
 
 
-def download_tululu_by_category(url, images_path, books_path, limit=None):
-    current_url = url
+def get_new_generated_page_url(start_page_number, end_page_number, url_category_tpl):
+    def generate_page_iterator():
+        for page_number in range(start_page_number, end_page_number):
+            yield url_category_tpl.format(page_number)
 
-    books_counter = 0
+    return generate_page_iterator
 
-    while True:
+
+def download_tululu_by_category(page_url_generator, images_path, books_path, json_file_path, skip_images, skip_text):
+    for page_url in page_url_generator():
+        print(f'Current page url: {page_url}')
         try:
-            response = get_page(current_url)
+            response = get_page(page_url)
         except ResponseRedirectException:
             continue
+
         books_urls = parse_category_page(response)
-        current_url = get_next_page_url(response)
-
-        if not current_url:
-            break
-        if limit and books_counter >= limit:
-            break
-
-        books_counter += len(books_urls)
-        print(books_counter, books_urls)
-        download_tululu(books_urls, images_path, books_path)
+        download_tululu(
+            books_urls,
+            images_path=images_path,
+            books_path=books_path,
+            json_file_path=json_file_path,
+            skip_images=skip_images,
+            skip_text=skip_text
+        )
 
 
 if __name__ == '__main__':
+    args = parse_params()
+
     disable_warnings(InsecureRequestWarning)
-    category_url = 'https://tululu.org/l55/'
-    books_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'books')
-    images_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'images')
-    download_tululu_by_category(category_url, images_path, books_path, limit=100)
+    category_page_generation_template = 'https://tululu.org/l55/{}/'
+    page_generator = get_new_generated_page_url(args.start_page, args.end_page, category_page_generation_template)
+
+    destination_directory_path = args.dest_folder or os.path.abspath(os.path.dirname(__file__))
+    books_path = os.path.join(destination_directory_path, 'books')
+    images_path = os.path.join(destination_directory_path, 'images')
+
+    json_file_path = args.json_path or os.path.join(destination_directory_path, 'book_info.json')
+
+    download_tululu_by_category(
+        page_generator,
+        images_path=images_path,
+        books_path=books_path,
+        json_file_path=json_file_path,
+        skip_images=args.skip_imgs,
+        skip_text=args.skip_txt
+    )
